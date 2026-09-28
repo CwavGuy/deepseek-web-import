@@ -233,6 +233,9 @@ test('the stored header dialect overrides the modeled row', () => {
   assert.equal(headerDialect({ version: 0 }), null)
   assert.equal(formatProfile(1).isSeededFlag, false, 'the modeled row')
   assert.equal(formatProfile(1, 'seeded').isSeededFlag, true, 'evidence wins')
+  // the two flags are coupled in every published generation
+  assert.equal(formatProfile(1, 'seeded').assistantStream, true)
+  assert.equal(formatProfile(1, 'seedLength').assistantStream, false)
   const base = { id: 'session-x', createdAt: 1, cwd: '/tmp/ws' }
   assert.ok('isSeeded' in sessionHeader(formatProfile(1, 'seeded'), base))
   assert.ok(!('isSeeded' in sessionHeader(formatProfile(1, 'seedLength'), base)))
@@ -244,6 +247,7 @@ test('the stored header dialect overrides the modeled row', () => {
   // an unknown future version is modeled, so evidence applies there too
   assert.equal(formatProfile(9, 'seedLength').isSeededFlag, false)
   assert.equal(formatProfile(9, 'seeded').isSeededFlag, true)
+  assert.equal(formatProfile(9, 'seeded').assistantStream, true)
 })
 
 test('storage evidence accepts both listing shapes', async () => {
