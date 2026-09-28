@@ -11,7 +11,7 @@ CURRENT_DSH="${CURRENT_DSH:-/usr/local/lib/node_modules/@deepseek-ai/dsh}"
 MATRIX_DIR="${MATRIX_DIR:-/tmp/compat}"
 
 echo "== unit tests =="
-node --test "$REPO/test/events.test.mjs"
+node --test "$REPO/test/events.test.mjs" "$REPO/test/host-routes.test.mjs" "$REPO/test/transport.test.mjs"
 
 # era:format-version:package-version
 ERAS="v0:0:0.1.1-rc.2 v2:2:0.1.3-alpha.2 v3:3:0.1.6-alpha.2"

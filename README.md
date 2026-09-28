@@ -87,12 +87,16 @@ dsh plugin add <你的GitHub用户名>/deepseek-web-import
 - 对话目录一次最多拉取 **100 条**：实测 `fetch_page` 响应仅含 `chat_sessions` + `has_more`，无可用游标字段（`cursor`/`lte_cursor` 参数均不生效），超过 100 条时只返回最新 100 条。
 - `userToken` 有时效（约数小时~数天），失效后重新复制保存即可。
 - 联网检索类片段（`TOOL_SEARCH` / `TOOL_OPEN`）不会导入为 DSH 工具调用，只保留正文与思维链。
+- 单次导入的响应上限约 **4 MB 文本**（超长对话会返回 `too_large` 提示，而不是静默截断）。
+- 只有附件、没有文字的消息会导入为一句明确说明；`SYSTEM`/`TOOL` 等非对话角色会被忽略。
+- 导入按 `history_messages` 返回的**单条主线**顺序进行（不解析 `parent_id` 分支）：若 DeepSeek 针对「编辑/重新生成」返回兄弟分支，会被当作先后两轮导入。
+- 历史以「未回答的用户提问」结尾时，日志保留未闭合的 turn（DSH 打开会话时会自行补上 `interrupted` 收尾），这是为了让导入内容与网页端一致。
 - 修改 `lib/` 下的代码后**必须重启 DSH** 才会生效：这个部署的 HMR 不监听 `node_modules`，且 Node 对模块与包解析都有进程级缓存。
 
 ## 开发与测试
 
 ```sh
-node --test test/events.test.mjs        # 纯单测，无需 DSH
+npm test                                # 57 个单测（翻译层 + 路由层 + 传输层），无需 DSH
 
 # 真实后端联调（在哪个版本目录下跑，就用哪个版本的持久化后端）
 cd /usr/local/lib/node_modules/@deepseek-ai/dsh

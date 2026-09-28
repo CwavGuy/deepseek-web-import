@@ -64,6 +64,8 @@ const pluginCtx = {
     if (name === 'subprocess') {
       return {
         spawn: () => ({
+          /* the transport writes the request spec on stdin, never in argv */
+          stdin: { on() {}, end() {} },
           done: Promise.resolve({ exitCode: 0 }),
           collected: {
             stdout: { readFrom: () => ({ text: JSON.stringify({ status: 200, statusText: 'OK', headers: {}, body: rawBody }) }) },

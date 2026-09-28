@@ -16,7 +16,7 @@ jobs:
       - name: Syntax check
         run: for f in lib/*.js test/*.mjs; do node --check "$f"; done
       - name: Unit tests
-        run: node --test test/events.test.mjs
+        run: node --test test/events.test.mjs test/host-routes.test.mjs test/transport.test.mjs
 
   # The real-backend matrix needs one DSH release per generation. It is kept as
   # a manual job because it downloads several hundred MB from npm.

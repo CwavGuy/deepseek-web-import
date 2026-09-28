@@ -9,7 +9,7 @@
 | 格式 | 由哪些版本写入 | Session 头 | `assistant/message` | `sessionPersistence` 接口 |
 |------|----------------|-----------|---------------------|---------------------------|
 | v0 | 0.1.1-rc.2 … 0.1.2-rc.1 | `version,id,createdAt,cwd,seedLength?`（**没有 `isSeeded`**） | 没有 `stream` 字段 | 旧式：`create(meta): Promise<void>` + `append(id, events)` |
-| v1 | 未发现发布版本写入 v1 | 按 v0 建模 | 没有 `stream` | 旧式 |
+| v1 | 未发现发布版本写入 v1 | 按 v0 建模，运行时再按证据修正¹ | 没有 `stream` | 旧式 |
 | v2 | 0.1.3-alpha.2 | `…,isSeeded`（显式拒绝 `seedLength`） | `stream` 必填 | 句柄式：`create(header) → SessionHandle`、`open/flush/stat/list` |
 | v3 | 0.1.5-rc.2 … 0.1.6-alpha.2 | 同 v2 | `stream` 必填 | 句柄式 |
 | v4 | 0.1.7-rc.2+ | 同 v2，且 `delegationDepth` **必填** | `stream` 必填 | 句柄式 |
@@ -26,6 +26,10 @@
   `@0.1.3-alpha.2`（`create → handle`、`open/flush/stat/list`）
 - 事件字段：`assistant/message` 在 v0 是 `{turn,step,message,usage?,interrupted?}`，
   v2+ 是 `{turn,step,message,stream,…}`
+
+¹ **v1 的处理方式**：没有任何已发布版本写过 v1，所以那一行是按 v0 建模的。为了让这个猜测不至于变成 bug，
+插件在写入前会读**该 profile 自己已存会话**的头部字段来判断方言（有 `isSeeded` 走 v2+ 形状，有 `seedLength` 走 v0/v1 形状），
+证据优先于表格；两边一致时表格不变。单测覆盖了这条路径（`headerDialect` / `resolveStorageEvidence`）。
 
 其余插件依赖的服务（`webServer`、`credentials`、`workspaceRegistry.attachSession`）
 在 v0 到 v4 之间签名一致，已逐版本核对，因此兼容层只需要处理会话持久化这一层。
