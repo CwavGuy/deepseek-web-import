@@ -87,6 +87,20 @@ e2e v4            PASS live import → format v4, 20 events, 6 messages, attache
 再用该版本的读取路径读回、重建 `Session` 并 `deriveMessages()`，断言事件数、格式版本、
 消息条数、思维链存在、工作区挂载。`test/fixtures/history.json` 是**合成数据**，可安全引用。
 
+### 一个只有跨代读取才能发现的约束
+
+审计发现（并已修）：用户分支原先发的是 `turn/start → user/message → step/start`，
+而 DSH 自己的日志是 `turn/start → step/start → user/message`。v2→v3 迁移在**第一个 `step/start`**
+处插入 system 头，因此「首个 step 之前就有 surface 事件」的 v0/v2 日志会被 v3/v4 构建拒绝：
+
+```
+format v2 surface before first step cannot acquire a system head without changing chronology
+```
+
+也就是：在 0.1.1-rc.2 ～ 0.1.3-alpha.2 上导入的会话，用户升级 DSH 后会打不开。
+现在 step 先于消息，并且新增了 `test/cross-version.mjs`：**旧版本写、当前版本读**，
+`sh test/matrix.sh` 会为 v0/v2/v3 各跑一遍（v0/v2 的 v4 读取结果：21 events、6/6 messages）。
+
 ## 兼容性与行为变化
 
 - **v1 说明**：没有任何已发布版本写过 v1，所以表里那行按 v0 建模；插件会先读该 profile 自己已存会话的头部字段判断方言，

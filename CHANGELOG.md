@@ -2,6 +2,20 @@
 
 本分支遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
 
+## [0.2.2] — 2026-09-28
+
+### 修复
+
+- **跨版本可读性（重要）**：用户分支把 `user/message` 排在 `step/start` **之前**，
+  而 DSH 自己的日志是 `turn/start → step/start → user/message`。v2→v3 迁移会在**第一个
+  `step/start`** 处插入 system 头，所以「首个 step 之前就出现 surface 事件」的日志会被 v3/v4
+  构建直接拒绝：
+  `format v2 surface before first step cannot acquire a system head without changing chronology`。
+  后果是：在 **0.1.1-rc.2 ～ 0.1.3-alpha.2** 上导入的会话，用户升级 DSH 之后**打不开**
+  （文件仍在，只是读不出来）。现在 step 先于消息，跨代读取恢复正常。
+- 新增 **跨代读取测试**（`test/cross-version.mjs` + 矩阵脚本）：用旧版本写入、用当前版本读取，
+  专门覆盖「同版本往返测不出来」的迁移约束。此前矩阵每个版本只用自己读写，因此这类问题不可见。
+
 ## [0.2.1] — 2026-09-28
 
 发布后审计（三位独立评审 + 逐行复核）发现的修正。仍然兼容 v0–v4。
