@@ -34,6 +34,22 @@
 其余插件依赖的服务（`webServer`、`credentials`、`workspaceRegistry.attachSession`）
 在 v0 到 v4 之间签名一致，已逐版本核对，因此兼容层只需要处理会话持久化这一层。
 
+## 跨代可读性（升级 DSH 后旧导入还能不能打开）
+
+导入的日志要保持「**写入它的构建**之外、**更新版本**的构建也能读」——用户升级 DSH 之后，
+旧导入会被新版按格式链迁移（v0→v1→v2→v3→v4）。这条链上有硬性约束，**同版本往返测试看不出来**：
+
+- **首个 surface 事件之前必须已有 `step/start`**。v2→v3 迁移在第一个 `step/start` 处插入
+  system 头；若日志在第一个 step 之前就出现 `user/message`/`assistant/message`/`tool/result`，
+  迁移会抛出
+  `format v2 surface before first step cannot acquire a system head without changing chronology`，
+  该会话在新版本上**列出了但打不开**。
+  因此本插件的事件顺序是 `turn/start → step/start → user/message`（与 DSH 自己的日志一致）。
+- 写入 v3/v4 的日志不受这条约束影响（v3→v4 没有该规则），但顺序仍保持一致。
+
+验证方式：`test/cross-version.mjs` 分两步跑——在旧版本目录里 `write`，在当前版本目录里 `read`；
+`test/matrix.sh` 会对每个可安装的旧版本跑一遍（v0/v2/v3 写入 → v4 读取）。
+
 ## 怎么自己验证
 
 ### 1) 纯单测（不需要 DSH）
@@ -65,7 +81,16 @@ cd /tmp/compat/v3 && node <repo>/test/compat.mjs --expect 3
 `live-import.mjs` 更进一步：直接调用插件的 host 路由（网络层替换成合成响应），
 断言写入的事件数、格式版本、派生消息条数和工作区挂载。
 
-### 3) 一键矩阵
+### 3) 跨代读取（旧版本写、新版本读）
+
+```sh
+cd /tmp/compat/v0 && node <repo>/test/cross-version.mjs write /tmp/xver/v0 session-cross-v0
+cd /usr/local/lib/node_modules/@deepseek-ai/dsh
+node <repo>/test/cross-version.mjs read /tmp/xver/v0
+# PASS read session-cross-v0: stored v4 → 21 events, 6/6 messages
+```
+
+### 4) 一键矩阵
 
 ```sh
 sh test/matrix.sh

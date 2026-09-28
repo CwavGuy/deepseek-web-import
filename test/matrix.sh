@@ -38,9 +38,23 @@ for entry in $ERAS; do
   ( cd "$dir" && node "$REPO/test/compat.mjs" --expect "$format" && node "$REPO/test/live-import.mjs" )
 done
 
+# Cross-generation: a session imported by an older build must still open after
+# an upgrade. Same-version round trips cannot catch migration requirements.
+XVER="$MATRIX_DIR/cross-version"
+for entry in $ERAS; do
+  era=$(echo "$entry" | cut -d: -f1)
+  dir="$MATRIX_DIR/$era"
+  ( cd "$dir" && node "$REPO/test/cross-version.mjs" write "$XVER/$era" "session-cross-$era" )
+done
+
 if [ -d "$CURRENT_DSH" ]; then
   echo "== current install ($CURRENT_DSH) =="
   ( cd "$CURRENT_DSH" && node "$REPO/test/compat.mjs" && node "$REPO/test/live-import.mjs" )
+  echo "== cross-generation reads with the current install =="
+  for entry in $ERAS; do
+    era=$(echo "$entry" | cut -d: -f1)
+    ( cd "$CURRENT_DSH" && node "$REPO/test/cross-version.mjs" read "$XVER/$era" )
+  done
 else
   echo "current DSH install not found at $CURRENT_DSH (set CURRENT_DSH=...)" >&2
 fi

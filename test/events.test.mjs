@@ -130,6 +130,14 @@ test('the event log is a dense, balanced turn/step bracket', () => {
   assert.equal(events[0].type, 'session/title')
   assert.equal(events[events.length - 1].type, 'session/end-seed')
   assert.deepEqual(events[events.length - 1].data, {})
+  // a surface event may never precede the first step/start of its turn: a v3+
+  // build cannot migrate such a v0/v2 log (no place for the system head)
+  const surfaceTypes = new Set(['user/message', 'assistant/message', 'tool/result'])
+  let seenStep = false
+  for (const event of events) {
+    if (event.type === 'step/start') seenStep = true
+    if (surfaceTypes.has(event.type)) assert.ok(seenStep, `surface event at seq ${event.seq} has no open step`)
+  }
   const opens = events.filter((event) => event.type === 'turn/start').length
   const closes = events.filter((event) => event.type === 'turn/end').length
   assert.equal(opens, closes)
