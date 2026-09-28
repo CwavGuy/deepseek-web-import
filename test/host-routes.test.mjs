@@ -50,11 +50,13 @@ function harness(options = {}) {
     async create(header) {
       calls.created.push(header)
       return {
-        async append(events) { calls.appended.push({ id: header.id, events }) },
+        async append(events) { calls.appended.push({ id: header.id, events }); calls.written = events },
         async flush() {},
         async close() { calls.closed += 1 },
       }
     },
+    /* the import verifies what it wrote with whatever reader the build exposes */
+    async readFrom() { return { meta: { version: 4, id: 'session-x' }, events: calls.written ?? [] } },
   }
   /* One instance per service: routes registered by apply() must land in the
      same table the test reads back from, and the spec must arrive on stdin. */
@@ -378,6 +380,42 @@ test('a failed write keeps its own error even when the writer also fails to clos
   const result = await post(server, '/__deepseek-web-import/importToSession', { sessionId: 'c1', workspaceId: 'ws-1' })
   assert.equal(result.json.error, 'persist')
   assert.match(result.json.message, /append exploded/)
+})
+
+test('a session this build cannot read back is reported, not reported as success', async () => {
+  const { calls, server } = harness({
+    persistence: {
+      async create(header) {
+        calls.created.push(header)
+        return { async append() {}, async flush() {}, async close() {} }
+      },
+      async readFrom() { throw new Error('contains event type "future/event" unknown to this harness') },
+    },
+  })
+  const result = await post(server, '/__deepseek-web-import/importToSession', { sessionId: 'c1', workspaceId: 'ws-1' })
+  assert.equal(result.json.ok, false)
+  assert.equal(result.json.error, 'verify')
+  assert.match(result.json.message, /读不回来/)
+  assert.equal(calls.attached.length, 0, 'an unreadable session is not attached to a workspace')
+})
+
+test('the read-back tolerates one transient failure', async () => {
+  let attempts = 0
+  const { server } = harness({
+    persistence: {
+      async create(header) {
+        return { async append() {}, async flush() {}, async close() {} }
+      },
+      async readFrom() {
+        attempts += 1
+        if (attempts === 1) throw new Error('token revision moved')
+        return { meta: { version: 4, id: 'session-x' }, events: [{}] }
+      },
+    },
+  })
+  const result = await post(server, '/__deepseek-web-import/importToSession', { sessionId: 'c1', workspaceId: 'ws-1' })
+  assert.equal(result.json.ok, true, JSON.stringify(result.json))
+  assert.equal(attempts, 2)
 })
 
 test('a write failure surfaces the backend message', async () => {

@@ -13,8 +13,8 @@ v0/v2 日志会被 v3/v4 构建直接拒绝：
 format v2 surface before first step cannot acquire a system head without changing chronology
 ```
 
-**后果**：在 DSH **0.1.1-rc.2 ～ 0.1.3-alpha.2** 上导入的会话，用户升级 DSH 之后
-**打不开**（会话文件仍在、列表里也还在，但读取会被拒）。在 0.1.5-rc.2+ 上导入的不受影响。
+**后果**：在 DSH **0.1.1-rc.1 ～ 0.1.3-alpha.2** 上导入的会话，用户升级 DSH 之后
+**打不开**（会话文件仍在、列表里也还在，但读取会被拒）。在 0.1.5-alpha.1+ 上导入的不受影响。
 
 ## 修复
 
@@ -41,4 +41,4 @@ format v2 surface before first step cannot acquire a system head without changin
 dsh plugin add CwavGuy/deepseek-web-import
 ```
 
-装完重启 DSH。**如果你在 0.1.5-rc.2 之前导入过会话，用本版重新导入一次即可**（旧的那些在升级后的 DSH 上无法打开）。
+装完重启 DSH。**如果你在 0.1.5-alpha.1 之前导入过会话，用本版重新导入一次即可**（旧的那些在升级后的 DSH 上无法打开）。

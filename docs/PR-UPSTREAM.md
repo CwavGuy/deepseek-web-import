@@ -1,14 +1,14 @@
-# 修复：导入在 0.1.5-rc.2 之后必然失败，并适配 Session 格式 v0–v4
+# 修复：导入在 0.1.5-alpha.1 之后必然失败，并适配 Session 格式 v0–v4
 
-> 这个 PR 让「导入为会话」在 DSH **0.1.1-rc.2 ～ 0.1.7-rc.2+** 上都能用。
+> 这个 PR 让「导入为会话」在 DSH **0.1.1-rc.1 ～ 0.1.7-alpha.1+** 上都能用。
 > 动机很直接：本插件导入时报 `{"ok":false,"error":"persist","message":"encodeCurrent requires Session format v3"}`，
-> 而 0.1.7-rc.2 起会话格式已经是 **v4**，只修 v3 也活不过一个版本。
+> 而 0.1.7-alpha.1 起会话格式已经是 **v4**，只修 v3 也活不过一个版本。
 
 ## 问题（三个叠加的 bug）
 
 1. **会话头版本写死为 `0`**
    `lib/index.js` 里 `const meta = { version: 0, ... }`。这个值来自 DSH 0.1.1/0.1.2 时代（那时确实是 v0）；
-   0.1.5-rc.2 起写 v3、0.1.7-rc.2 起写 v4，于是 `sessionPersistence.create` 直接抛
+   0.1.5-alpha.1 起写 v3、0.1.7-alpha.1 起写 v4，于是 `sessionPersistence.create` 直接抛
    `encodeCurrent requires Session format v3`。
 
 2. **持久化接口用错了代次**
@@ -79,7 +79,7 @@ sh test/matrix.sh
 v0  0.1.1-rc.2    PASS format v0 | stored v0 | 20 events | 6 messages | reasoning=true
 v2  0.1.3-alpha.2 PASS format v2 | stored v2 | 20 events | 6 messages | reasoning=true
 v3  0.1.6-alpha.2 PASS format v3 | stored v3 | 20 events | 6 messages | reasoning=true
-v4  0.1.7-rc.2    PASS format v4 | stored v4 | 20 events | 6 messages | reasoning=true
+v4  0.1.7-alpha.1    PASS format v4 | stored v4 | 20 events | 6 messages | reasoning=true
 e2e v4            PASS live import → format v4, 20 events, 6 messages, attached=1
 ```
 
@@ -97,14 +97,14 @@ e2e v4            PASS live import → format v4, 20 events, 6 messages, attache
 format v2 surface before first step cannot acquire a system head without changing chronology
 ```
 
-也就是：在 0.1.1-rc.2 ～ 0.1.3-alpha.2 上导入的会话，用户升级 DSH 后会打不开。
+也就是：在 0.1.1-rc.1 ～ 0.1.3-alpha.2 上导入的会话，用户升级 DSH 后会打不开。
 现在 step 先于消息，并且新增了 `test/cross-version.mjs`：**旧版本写、当前版本读**，
 `sh test/matrix.sh` 会为 v0/v2/v3 各跑一遍（v0/v2 的 v4 读取结果：21 events、6/6 messages）。
 
 ## 兼容性与行为变化
 
 - **v1 说明**：没有任何已发布版本写过 v1，所以表里那行按 v0 建模；插件会先读该 profile 自己已存会话的头部字段判断方言，
-  证据优先，所以两种可能形状都能写对。
+  方言只覆盖建模的行（v1 与未知版本），并同时切换 `isSeeded` 与 `stream`（每代里两者绑定）。
 - `messageCount` 现在返回**可导入**的消息条数（非 `USER`/`ASSISTANT` 的行会被忽略），并在返回里新增
   `sessionFormatVersion` 与 `eventCount`，便于排查。
 - 新增错误码：`too_large`（对话超过上限）、`empty_history`（整段对话没有可翻译回合，不再创建空会话）。

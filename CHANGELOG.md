@@ -11,7 +11,7 @@
   `step/start`** 处插入 system 头，所以「首个 step 之前就出现 surface 事件」的日志会被 v3/v4
   构建直接拒绝：
   `format v2 surface before first step cannot acquire a system head without changing chronology`。
-  后果是：在 **0.1.1-rc.2 ～ 0.1.3-alpha.2** 上导入的会话，用户升级 DSH 之后**打不开**
+  后果是：在 **0.1.1-rc.1 ～ 0.1.3-alpha.2** 上导入的会话，用户升级 DSH 之后**打不开**
   （文件仍在，只是读不出来）。现在 step 先于消息，跨代读取恢复正常。
 - 新增 **跨代读取测试**（`test/cross-version.mjs` + 矩阵脚本）：用旧版本写入、用当前版本读取，
   专门覆盖「同版本往返测不出来」的迁移约束。此前矩阵每个版本只用自己读写，因此这类问题不可见。
@@ -59,7 +59,7 @@
 
 ### 修复
 
-- **导入必然失败**（`encodeCurrent requires Session format v3`）：会话头原先把 `version` 写死为 `0`，而 0.1.5-rc.2 起写入的是 v3、0.1.7-rc.2 起是 v4。现在运行时会探测当前构建写入的格式版本，并在后端拒绝时按它报出的版本自动重试。
+- **导入必然失败**（`encodeCurrent requires Session format v3`）：会话头原先把 `version` 写死为 `0`，而 0.1.5-alpha.1 起写入的是 v3、0.1.7-alpha.1 起是 v4。现在运行时会探测当前构建写入的格式版本，并在后端拒绝时按它报出的版本自动重试。
 - **用错持久化接口**：v2 起 `sessionPersistence` 是句柄式接口（`create(header) → handle.append/flush/close`），
   原代码调用的是 v0/v1 时代的 `create(meta)` + `append(id, events)`。现在两代接口都支持，自动识别。
 - **导入的消息全部为空**：DeepSeek 历史消息的正文在 `fragments`（`REQUEST` / `RESPONSE` / `THINK`）而不是 `content`。
@@ -80,11 +80,11 @@
 
 | DSH | 格式 | 状态 |
 |-----|------|------|
-| 0.1.1-rc.2 – 0.1.2-rc.1 | v0 | ✅ 实测 |
+| 0.1.1-rc.1 – 0.1.2-rc.1 | v0 | ✅ 实测 |
 | 未发布 | v1 | ✅ 按 v0 建模 + 单测 |
 | 0.1.3-alpha.2 | v2 | ✅ 实测 |
-| 0.1.5-rc.2 – 0.1.6-alpha.2 | v3 | ✅ 实测 |
-| 0.1.7-rc.2+ | v4 | ✅ 实测 |
+| 0.1.5-alpha.1 – 0.1.6-alpha.2 | v3 | ✅ 实测 |
+| 0.1.7-alpha.1+ | v4 | ✅ 实测 |
 
 ## [0.1.0] — 2026-08-17（上游原作者 wpc0323）
 
