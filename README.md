@@ -49,7 +49,11 @@
 
 ```sh
 # 从 GitHub 安装（dsh 会把它当作 bundle 插件）
-dsh plugin add <你的GitHub用户名>/deepseek-web-import
+dsh plugin --profile web add github:<你的GitHub用户名>/deepseek-web-import
+```
+```sh
+# 若直接安装本Repositories：
+dsh plugin --profile web add github:CwavGuy/deepseek-web-import
 ```
 
 装完**重启 DSH**，设置页左侧出现「DeepSeek 对话导入」。
